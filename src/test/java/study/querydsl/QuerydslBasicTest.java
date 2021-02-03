@@ -17,6 +17,8 @@ import study.querydsl.entity.QTeam;
 import study.querydsl.entity.Team;
 
 import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.PersistenceUnit;
 
 import java.util.List;
 
@@ -294,8 +296,8 @@ public class QuerydslBasicTest {
 
 
     /**
-     * 세타 조인
-     * 회원의 이름이 팀 이름과 같은 회원 조회
+     * 연관관계 없는 엔티티 외부 조인
+     * 회원의 이름이 팀 이름과 같은 대상 외부 조인
      */
     @Test
     void join_on_no_relation(){
@@ -303,12 +305,34 @@ public class QuerydslBasicTest {
         em.persist(new Member("teamB"));
         em.persist(new Member("teamC"));
 
-        List<Member> result = queryFactory
-                .selectFrom(member)
-                .from(member, team)
-                .where(member.username.eq(team.name))
+        List<Tuple> result = queryFactory
+                .select(member, team)
+                .from(member)
+                .leftJoin(team).on(member.username.eq(team.name))
+//                .join(team).on(member.username.eq(team.name))
                 .fetch();
 
+        for (Tuple tuple : result) {
+            System.out.println("tuple = " + tuple);
+        }
+    }
+
+    @PersistenceUnit
+    EntityManagerFactory emf;
+
+    @Test
+    void fetchJoinNo(){
+        em.flush();
+        em.clear();
+
+        Member findMember = queryFactory
+                .selectFrom(member)
+                .where(member.username.eq("member1"))
+                .fetchOne();
+
+        System.out.println("findMember = " + findMember);
+
+        boolean loaded = emf.getPersistenceUnitUtil().isLoaded(findMember.getTeam());
 
     }
 
